@@ -1,0 +1,364 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title data-keep>RTOS란?</title>
+<meta data-keep name="claude:viewport-fit-sides" content="cover">
+<link data-keep rel="preconnect" href="https://fonts.googleapis.com">
+<link data-keep rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link data-keep rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
+<style data-keep id="deck-style">
+/* Layout: one slide at a time like an instrument screen — status bar on top, slide stage, progress strip sized by each slide's time budget */
+:root{
+  --bg:#eef1f4; --panel:#ffffff; --ink:#15202b; --muted:#5a6776; --line:#d3dae2; --lane:#f4f6f8;
+  --accent:#d9621c; --c1:#0e8a82; --c2:#4a5bc4; --c3:#b07c12; --miss:#cf3434; --on:#ffffff;
+  --sans:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f151c; --panel:#17202a; --ink:#e4ebf2; --muted:#93a1b1; --line:#2a3645; --lane:#1c2631;
+  --accent:#f0874a; --c1:#38bdb2; --c2:#8d9cff; --c3:#ddb04c; --miss:#ff6f6f; --on:#0f151c; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f151c; --panel:#17202a; --ink:#e4ebf2; --muted:#93a1b1; --line:#2a3645; --lane:#1c2631;
+  --accent:#f0874a; --c1:#38bdb2; --c2:#8d9cff; --c3:#ddb04c; --miss:#ff6f6f; --on:#0f151c; color-scheme:dark}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6}
+.deck{height:100%;display:grid;grid-template-rows:auto 1fr auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-block:10px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:13px;color:var(--muted)}
+.bar .series{flex:1;min-width:0}
+button{font:inherit;color:inherit;cursor:pointer}
+.chip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:4px 12px;font-family:var(--mono);font-size:13px}
+button.chip:hover{border-color:var(--muted)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.stage{overflow-y:auto;padding-block:32px}
+.slide{max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+.deck:not(.ready) #slides>.slide~.slide{display:none}
+.deck.ready .slide{display:none}
+.deck.ready .slide.cur{display:flex}
+.eyebrow{font-family:var(--mono);font-size:13px;letter-spacing:.06em;color:var(--accent)}
+h1,h2{margin:0;font-weight:700;text-wrap:balance;line-height:1.25}
+h1{font-size:clamp(40px,7vw,72px)}
+h2{font-size:clamp(26px,3.6vw,36px)}
+p{margin:0;max-width:68ch}
+ul{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px}
+code{font-family:var(--mono);font-size:.92em;color:var(--accent)}
+.cover{min-height:58vh;justify-content:center}
+.toc{display:flex;flex-wrap:wrap;gap:8px}
+.big{font-size:clamp(19px,2.3vw,24px);line-height:1.5}
+.def{display:flex;flex-direction:column;gap:14px}
+.def .row{display:grid;grid-template-columns:110px 1fr;gap:16px;align-items:baseline;border-top:1px solid var(--line);padding-top:14px}
+.def .row>*{min-width:0}
+.k{font-family:var(--mono);font-size:13px;color:var(--muted)}
+@media (max-width:560px){.def .row{grid-template-columns:1fr;gap:4px}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:15px}
+th,td{text-align:left;vertical-align:top;padding:10px 14px;border-bottom:1px solid var(--line)}
+tr:last-child td{border-bottom:0}
+th{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--muted);letter-spacing:.04em;background:var(--lane)}
+th:first-child{border-top-left-radius:10px} th:last-child{border-top-right-radius:10px}
+td:first-child{font-weight:700;white-space:nowrap}
+.col-rtos{color:var(--c1)}
+.facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:700px){.facts{grid-template-columns:1fr}}
+.fact{padding:12px 16px;display:flex;flex-direction:column;gap:4px}
+.fact b{font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:.04em}
+.fact .v{font-size:clamp(18px,2.2vw,22px);font-weight:700}
+.fact.pro b,.fact.pro .v{color:var(--c1)} .fact.con b,.fact.con .v{color:var(--miss)} .fact.hard b{color:var(--accent)} .fact.soft b{color:var(--c2)}
+.label{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.04em;margin-bottom:8px}
+.rules{display:flex;flex-direction:column}
+.rule{display:grid;grid-template-columns:150px 1fr;gap:16px;padding:10px 16px;border-bottom:1px solid var(--line)}
+.rule:last-child{border-bottom:0}
+.rule>*{min-width:0}
+.rule b{font-weight:700}
+@media (max-width:560px){.rule{grid-template-columns:1fr;gap:2px}}
+.callout{border:1px dashed var(--accent);border-radius:10px;padding:12px 16px}
+.note{font-size:14px;color:var(--muted)}
+/* timelines: 0~10 ms scale, 1 ms = 10% */
+.tlbox{padding:16px;display:flex;flex-direction:column;gap:14px}
+.tlrow{display:grid;grid-template-columns:180px 1fr;gap:14px;align-items:start}
+.tlrow>*{min-width:0}
+@media (max-width:560px){.tlrow{grid-template-columns:1fr;gap:4px}}
+.tlname{font-family:var(--mono);font-size:13px;line-height:1.4}
+.tlname small{display:block;font-family:var(--sans);font-size:13px;font-weight:700}
+.tlname.bad small{color:var(--miss)} .tlname.good small{color:var(--c1)} .tlname.plain small{color:var(--muted);font-weight:400}
+.tl{position:relative;height:30px;background:var(--lane);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.tl .b{position:absolute;top:3px;bottom:3px;border-radius:4px;font-family:var(--mono);font-size:11px;color:var(--on);display:flex;align-items:center;justify-content:center;overflow:hidden;white-space:nowrap}
+.b.lo{background:var(--c2)} .b.hi{background:var(--accent)} .b.mid{background:var(--c3)}
+.b.wait{background:repeating-linear-gradient(45deg,color-mix(in srgb,var(--miss) 22%,transparent) 0 6px,transparent 6px 12px);border:1px solid var(--miss);color:var(--miss)}
+.tl .ln{position:absolute;top:0;bottom:0;border-left:2px solid var(--c1)}
+.tl .ln.dl{border-left:2px dashed var(--miss)}
+.ax{position:relative;height:18px;margin-top:4px;font-family:var(--mono);font-size:11px;color:var(--muted)}
+.ax span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.ax span:first-child{transform:none}
+.ax span.r{transform:translateX(-100%)}
+.ax .arr{color:var(--c1);font-weight:500} .ax .dl{color:var(--miss);font-weight:500}
+.legend{display:flex;flex-wrap:wrap;gap:16px;font-size:13px;color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:6px}
+.nav{display:flex;align-items:center;gap:10px;padding-block:10px;border-top:1px solid var(--line);padding-bottom:max(10px,env(safe-area-inset-bottom,0px))}
+.prog{flex:1;display:flex;gap:3px;min-width:0}
+.prog button{border:0;background:var(--line);height:28px;border-radius:4px;padding:0 4px;font-family:var(--mono);font-size:11px;color:var(--muted);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;min-width:0}
+.prog button.cur{background:var(--accent);color:var(--on);flex:0 0 auto!important;padding:0 10px}
+.prog button:not(.cur){min-width:24px;padding:0 2px}
+@media (max-width:700px){.prog button:not(.cur){min-width:0}.prog button:not(.cur) .n{display:none}}
+.prog button .t{display:none}
+.prog button.cur .t{display:inline;margin-left:6px}
+.prog button.done{background:color-mix(in srgb,var(--accent) 35%,var(--line))}
+.arrow{border:1px solid var(--line);background:var(--panel);border-radius:6px;width:40px;height:32px}
+@media (prefers-reduced-motion:no-preference){.deck .slide.cur{animation:in .25s ease-out}@keyframes in{from{opacity:.4;transform:translateY(6px)}to{opacity:1;transform:none}}}
+</style>
+
+<div class="deck" id="deck">
+  <header class="bar">
+    <div class="series"> · RTOS란?</div>
+    <button class="chip" id="timer" type="button" title="발표 타이머 시작/정지">▶ 0:00</button>
+  </header>
+
+  <main class="stage" id="stage">
+    <div id="slides">
+
+<section class="slide cover" data-label="표지" data-sec="5">
+<h1>RTOS란?</h1>
+<div class="toc"><span class="chip">RTOS는?</span><span class="chip">실시간이란</span><span class="chip">Hard · Soft</span><span class="chip">일반 OS의 한계</span><span class="chip">선점 스케줄링</span><span class="chip">우선순위 정하기</span><span class="chip">우선순위 역전</span><span class="chip">RTOS vs 일반 OS</span><span class="chip">언제 무엇을</span><span class="chip">종류</span><span class="chip">정리</span></div>
+</section>
+
+<section class="slide" data-label="RTOS는?" data-sec="40">
+<div class="eyebrow">01</div>
+<h2>RTOS는?</h2>
+<div class="def">
+<div class="row"><span class="k">정의</span><p class="big">작업이 <b>정해진 시간</b> 안에 끝나도록 <b>보장</b>하는 운영체제</p></div>
+<div class="row"><span class="k">핵심</span><p class="big">'빠른 OS'가 아니라 <b>'늦지 않는 OS'</b></p></div>
+</div>
+<div>
+<div class="label">어느 쪽이 실시간 시스템에 맞을까?</div>
+<div class="facts">
+<div class="panel fact con"><b>시스템 A</b><span class="v">평균 1 ms, 가끔 100 ms</span>평균은 빠르지만 언제 늦을지 모름 → ✗</div>
+<div class="panel fact pro"><b>시스템 B</b><span class="v">평균 3 ms, 최대 5 ms</span>평균은 느려도 절대 5 ms를 넘지 않음 → ✓</div>
+</div>
+</div>
+</section>
+
+<section class="slide" data-label="실시간이란" data-sec="45">
+<div class="eyebrow">02</div>
+<h2>실시간을 말할 때 쓰는 용어</h2>
+<div class="panel rules">
+<div class="rule"><b>데드라인</b><span>작업이 끝나야 하는 시각. 넘기면 늦은 것</span></div>
+<div class="rule"><b>결정성</b><span>응답 시간을 미리 예측할 수 있음 (Determinism)</span></div>
+<div class="rule"><b>최악 실행 시간</b><span>가장 오래 걸리는 경우의 실행 시간 (WCET). 실시간 시스템은 평균이 아니라 이 값으로 설계</span></div>
+<div class="rule"><b>지터</b><span>주기나 응답 시간이 흔들리는 정도. 작을수록 좋음</span></div>
+</div>
+<div class="callout">실시간 시스템은 <b>평균</b>이 아니라 <b>최악</b>을 본다</div>
+</section>
+
+<section class="slide" data-label="Hard · Soft" data-sec="35">
+<div class="eyebrow">03</div>
+<h2>하드 리얼타임과 소프트 리얼타임</h2>
+<div class="facts">
+<div class="panel fact hard"><b>HARD REAL TIME</b><span class="big">한 번만 놓쳐도 실패</span>에어백, 브레이크(ABS), 미사일 유도 제어</div>
+<div class="panel fact soft"><b>SOFT REAL TIME</b><span class="big">놓치면 품질 저하</span>영상 스트리밍, 게임 화면, 음성 통화</div>
+</div>
+<div class="panel rules">
+<div class="rule"><b>하드 리얼타임</b><span>시스템이 지켜야 하는 <b>요구사항</b></span></div>
+<div class="rule"><b>RTOS</b><span>그 요구사항을 지키게 도와주는 <b>도구</b></span></div>
+</div>
+<p class="note">RTOS를 써도 잘못 짜면 데드라인을 놓칠 수 있고, 일이 단순하면 RTOS 없이도 하드 리얼타임을 만들 수 있음</p>
+</section>
+
+<section class="slide" data-label="일반 OS의 한계" data-sec="40">
+<div class="eyebrow">04</div>
+<h2>일반 OS로는 왜 안 될까?</h2>
+<div class="panel rules">
+<div class="rule"><b>공정성이 목표</b><span>모든 작업에 CPU를 고르게 나눔 → 급한 작업도 다른 작업 뒤에서 차례를 기다릴 수 있음</span></div>
+<div class="rule"><b>예측 어려운 지연</b><span>가상 메모리에서 데이터를 디스크로부터 다시 불러오는 시간(페이지 폴트), 커널 작업 중 끼어들 수 없는 구간, 백그라운드 서비스</span></div>
+<div class="rule"><b>결과</b><span>평균은 빠르지만 <b>최악의 응답 시간</b>을 보장하기 어려움</span></div>
+</div>
+<p class="note">리눅스도 PREEMPT_RT로 실시간성을 크게 높일 수 있지만, MMU가 있는 큰 칩이 필요해 작은 MCU에는 올라가지 않음</p>
+</section>
+
+<section class="slide" data-label="선점 스케줄링" data-sec="45">
+<div class="eyebrow">05</div>
+<h2>RTOS의 핵심: 우선순위 선점 스케줄링</h2>
+<p>낮은 우선순위의 <b>로그 저장</b>이 8 ms 동안 도는 중, 2 ms에 높은 우선순위의 <b>모터 제어</b>(2 ms 걸림, 데드라인 5 ms)가 들어오면?</p>
+<div class="panel tlbox" role="img" aria-label="선점형은 2ms에 모터 제어를 바로 실행해 4ms에 끝내 데드라인 5ms를 지키고, 선점이 없으면 로그 저장이 끝나는 8ms까지 기다려 10ms에 끝나 데드라인을 놓친다">
+<div class="tlrow">
+<div class="tlname good">선점형 (RTOS)<small>들어오자마자 실행 → 4 ms에 끝 ✓</small></div>
+<div>
+<div class="tl"><span class="b lo" style="left:0;width:20%">로그</span><span class="b hi" style="left:20%;width:20%">모터</span><span class="b lo" style="left:40%;width:60%">로그</span><i class="ln" style="left:20%"></i><i class="ln dl" style="left:50%"></i></div>
+<div class="ax"><span style="left:0">0</span><span class="arr" style="left:20%">2 도착</span><span class="dl" style="left:50%">5 데드라인</span><span class="r" style="left:100%">10 ms</span></div>
+</div>
+</div>
+<div class="tlrow">
+<div class="tlname bad">선점 없음 (차례 대기)<small>8 ms까지 기다림 → 데드라인 놓침 ✗</small></div>
+<div>
+<div class="tl"><span class="b lo" style="left:0;width:80%">로그</span><span class="b hi" style="left:80%;width:20%">모터</span><i class="ln" style="left:20%"></i><i class="ln dl" style="left:50%"></i></div>
+<div class="ax"><span style="left:0">0</span><span class="arr" style="left:20%">2 도착</span><span class="dl" style="left:50%">5 데드라인</span><span class="r" style="left:100%">10 ms</span></div>
+</div>
+</div>
+<div class="legend"><span><i style="background:var(--c2)"></i>낮은 우선순위 (로그 저장)</span><span><i style="background:var(--accent)"></i>높은 우선순위 (모터 제어)</span></div>
+</div>
+</section>
+
+<section class="slide" data-label="우선순위 정하기" data-sec="30">
+<div class="eyebrow">06</div>
+<h2>우선순위 정하는 법: Rate Monotonic</h2>
+<p class="big">주기가 <b>짧은</b> 작업일수록 우선순위를 <b>높게</b></p>
+<div class="panel tbl"><table>
+<thead><tr><th>작업</th><th>주기</th><th>우선순위</th></tr></thead>
+<tbody>
+<tr><td>모터 제어</td><td>1 ms</td><td class="col-rtos">높음</td></tr>
+<tr><td>센서 수집</td><td>10 ms</td><td>중간</td></tr>
+<tr><td>화면 갱신</td><td>100 ms</td><td>낮음</td></tr>
+</tbody></table></div>
+<p class="note">서로 독립된 주기 작업이라면, CPU 사용률이 약 69% 이하일 때 모든 데드라인을 지킬 수 있음이 증명되어 있음 (Liu &amp; Layland, 1973)</p>
+</section>
+
+<section class="slide" data-label="우선순위 역전" data-sec="45">
+<div class="eyebrow">07</div>
+<h2>우선순위 역전</h2>
+<div class="panel tlbox" role="img" aria-label="L이 자원을 잠근 뒤 H가 같은 자원을 기다리는 동안 M이 L을 밀어내고 실행되어, H가 M보다 늦게 실행된다">
+<div class="tlrow">
+<div class="tlname plain">H 높음<small>자원이 필요함</small></div>
+<div><div class="tl"><span class="b hi" style="left:20%;width:10%">H</span><span class="b wait" style="left:30%;width:60%">대기</span><span class="b hi" style="left:90%;width:10%">H</span></div></div>
+</div>
+<div class="tlrow">
+<div class="tlname plain">M 중간<small>자원과 상관없음</small></div>
+<div><div class="tl"><span class="b mid" style="left:40%;width:40%">M</span></div></div>
+</div>
+<div class="tlrow">
+<div class="tlname plain">L 낮음<small>자원을 잠그고 사용 중</small></div>
+<div>
+<div class="tl"><span class="b lo" style="left:0;width:20%">L 잠금</span><span class="b lo" style="left:30%;width:10%">L</span><span class="b lo" style="left:80%;width:10%">해제</span></div>
+<div class="ax"><span style="left:0">0</span><span class="arr" style="left:20%">H 도착</span><span class="arr" style="left:40%">M 도착</span><span class="r" style="left:100%">10 ms</span></div>
+</div>
+</div>
+</div>
+<div class="panel rules">
+<div class="rule"><b>문제</b><span>H가 L을 기다리는 사이 M이 L을 밀어냄 → <b>H가 M보다 늦게</b> 실행됨</span></div>
+<div class="rule"><b>해결</b><span><b>우선순위 상속</b>: L이 자원을 쥔 동안 H의 우선순위를 잠시 물려받아 M이 끼어들지 못하게 함</span></div>
+<div class="rule"><b>실제 사례</b><span>1997년 화성 탐사선 패스파인더: 시스템이 계속 리셋됨 → 지구에서 우선순위 상속을 켜서 해결</span></div>
+</div>
+</section>
+
+<section class="slide" data-label="vs 일반 OS" data-sec="40">
+<div class="eyebrow">08</div>
+<h2>RTOS vs 일반 OS</h2>
+<div class="panel tbl"><table>
+<thead><tr><th>항목</th><th>RTOS</th><th>일반 OS (리눅스 등)</th></tr></thead>
+<tbody>
+<tr><td>목표</td><td class="col-rtos">최악 응답 시간 보장</td><td>평균 처리량, 공정한 분배</td></tr>
+<tr><td>스케줄링</td><td class="col-rtos">고정 우선순위 선점</td><td>공정성 기반</td></tr>
+<tr><td>실행 단위</td><td class="col-rtos">태스크 (메모리 전부 공유 = 스레드와 같은 구조)</td><td>프로세스 (MMU로 메모리 격리) + 스레드</td></tr>
+<tr><td>크기</td><td class="col-rtos">수 KB ~ 수십 KB</td><td>수 MB 이상</td></tr>
+<tr><td>하드웨어</td><td class="col-rtos">MMU 없어도 됨 (Cortex-M 등 MCU)</td><td>보통 MMU 필요 (Cortex-A, x86)</td></tr>
+<tr><td>부팅</td><td class="col-rtos">ms 단위</td><td>초 단위</td></tr>
+</tbody></table></div>
+</section>
+
+<section class="slide" data-label="언제 무엇을" data-sec="35">
+<div class="eyebrow">09</div>
+<h2>언제 무엇을 쓰나</h2>
+<div class="panel rules">
+<div class="rule"><b>슈퍼루프</b><span>OS 없이 무한 루프 하나. 할 일이 적고 단순할 때</span></div>
+<div class="rule"><b>RTOS</b><span>일이 여러 개이고 늦으면 안 되는 제어 (모터, 센서, 비행 제어)</span></div>
+<div class="rule"><b>일반 OS</b><span>화면, 네트워크, 파일 처리가 많은 응용 (셋톱박스, 차량 인포테인먼트)</span></div>
+<div class="rule"><b>같이 쓰기</b><span>Zynq처럼 코어가 2개면 코어 0은 리눅스, 코어 1은 RTOS. 리눅스가 화면·네트워크, RTOS가 제어 (AMP)</span></div>
+</div>
+</section>
+
+<section class="slide" data-label="종류" data-sec="40">
+<div class="eyebrow">10</div>
+<h2>RTOS 종류와 고르는 기준</h2>
+<div class="panel tbl"><table>
+<thead><tr><th>RTOS</th><th>라이선스</th><th>주로 쓰는 곳</th></tr></thead>
+<tbody>
+<tr><td class="col-rtos">FreeRTOS</td><td>오픈소스 (MIT)</td><td>MCU 전반, IoT. 가장 많이 씀</td></tr>
+<tr><td>Zephyr</td><td>오픈소스 (Apache 2.0)</td><td>IoT, 블루투스 기기</td></tr>
+<tr><td>ThreadX</td><td>오픈소스 (MIT, Eclipse 재단)</td><td>MCU, 가전 (STM32 공식 지원)</td></tr>
+<tr><td>SafeRTOS</td><td>상용 (WITTENSTEIN)</td><td>FreeRTOS 기반 안전 인증판</td></tr>
+<tr><td>VxWorks</td><td>상용 (Wind River)</td><td>방산, 우주 탐사선, 통신 장비</td></tr>
+<tr><td>INTEGRITY</td><td>상용 (Green Hills)</td><td>항공·방산 고신뢰 시스템</td></tr>
+<tr><td>QNX</td><td>상용 (BlackBerry)</td><td>자동차 계기판·ADAS, 의료 장비</td></tr>
+</tbody></table></div>
+<div class="panel rules">
+<div class="rule"><b>고르는 기준</b><span>비용, 안전 인증, 지원하는 칩과 자료, 크기</span></div>
+<div class="rule"><b>안전 인증</b><span>항공 DO-178C, 자동차 ISO 26262, 산업 IEC 61508 → 인증이 필요하면 인증받은 상용 RTOS</span></div>
+</div>
+</section>
+
+<section class="slide" data-label="정리" data-sec="20">
+<div class="eyebrow">11</div>
+<h2>정리</h2>
+<div class="panel rules">
+<div class="rule"><b>RTOS란</b><span>빠른 OS가 아니라 <b>늦지 않는 OS</b> (최악 응답 시간 보장)</span></div>
+<div class="rule"><b>핵심</b><span>우선순위 선점 스케줄링 + Rate Monotonic + 우선순위 상속</span></div>
+<div class="rule"><b>쓰는 곳</b><span>늦으면 안 되는 제어는 RTOS, 화면·네트워크는 일반 OS</span></div>
+</div>
+</section>
+
+    </div>
+  </main>
+
+  <footer class="nav">
+    <button class="arrow" id="prev" type="button" aria-label="이전 슬라이드">←</button>
+    <div class="prog" id="prog"></div>
+    <button class="arrow" id="next" type="button" aria-label="다음 슬라이드">→</button>
+  </footer>
+</div>
+
+<script id="deck-app">
+(function(){
+const $=id=>document.getElementById(id);
+const deck=$('deck'), slidesBox=$('slides'), stage=$('stage'), prog=$('prog');
+
+let state=[...slidesBox.querySelectorAll(':scope>section.slide')].map(s=>({
+  label:s.dataset.label||'', sec:Math.max(5,+s.dataset.sec||30),
+  cls:[...s.classList].filter(c=>c!=='slide').join(' '), html:s.innerHTML.trim()
+}));
+
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+const fmt=s=>`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+let els=[], cur=0;
+
+function slideTag(s,i){return `<section class="slide${s.cls?' '+s.cls:''}"${i!=null?` id="s${i+1}"`:''} data-label="${esc(s.label)}" data-sec="${s.sec}">\n${s.html}\n</section>`;}
+function render(){
+  slidesBox.innerHTML=state.map((s,i)=>slideTag(s,i)).join('\n');
+  els=[...slidesBox.children];
+  renderProg(); go(cur,false);
+}
+function renderProg(){
+  prog.innerHTML=state.map((s,i)=>`<button type="button" data-i="${i}" style="flex:${s.sec}" title="${esc(s.label)}"><span class="n">${String(i).padStart(2,'0')}</span><span class="t">${esc(s.label)}</span></button>`).join('');
+  markProg(); tick();
+}
+function markProg(){[...prog.children].forEach((b,j)=>{b.classList.toggle('cur',j===cur);b.classList.toggle('done',j<cur);});}
+function go(i,push=true){
+  cur=Math.max(0,Math.min(state.length-1,i));
+  els.forEach((e,j)=>e.classList.toggle('cur',j===cur));
+  markProg(); stage.scrollTop=0;
+  if(push&&location.hash!=='#s'+(cur+1))history.replaceState(null,'','#s'+(cur+1));
+  tick();
+}
+prog.addEventListener('click',e=>{const b=e.target.closest('button');if(b)go(+b.dataset.i);});
+$('prev').onclick=()=>go(cur-1);
+$('next').onclick=()=>go(cur+1);
+document.addEventListener('keydown',e=>{
+  const t=e.target; if(t&&(t.isContentEditable||/INPUT|SELECT|TEXTAREA/.test(t.tagName)))return;
+  if(['ArrowRight','PageDown',' '].includes(e.key)){e.preventDefault();go(cur+1);}
+  else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();go(cur-1);}
+});
+let sx=null;
+stage.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;},{passive:true});
+stage.addEventListener('touchend',e=>{if(sx===null)return;const dx=e.changedTouches[0].clientX-sx;if(Math.abs(dx)>70&&!e.target.closest('.tbl'))go(cur+(dx<0?1:-1));sx=null;});
+window.addEventListener('hashchange',()=>{const m=/^#s(\d+)$/.exec(location.hash);if(m&&+m[1]-1!==cur)go(+m[1]-1,false);});
+
+/* timer: elapsed time only */
+const timerBtn=$('timer');
+let t0=null,acc=0,iv=null;
+function elapsed(){return acc+(t0?(Date.now()-t0)/1000:0);}
+function tick(){timerBtn.textContent=`${t0?'❚❚':'▶'} ${fmt(elapsed())}`;}
+timerBtn.onclick=()=>{if(t0){acc=elapsed();t0=null;clearInterval(iv);}else{t0=Date.now();iv=setInterval(tick,500);}tick();};
+
+deck.classList.add('ready');
+const m=/^#s(\d+)$/.exec(location.hash);
+cur=m?+m[1]-1:0;
+render();
+})();
+</script>
